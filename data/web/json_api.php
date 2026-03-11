@@ -233,6 +233,41 @@ if (isset($_GET['query'])) {
         case "time_limited_alias":
           process_add_return(mailbox('add', 'time_limited_alias', $attr));
         break;
+        case "user-alias":
+          if (!isset($_SESSION['mailcow_cc_role'])) {
+            http_response_code(403);
+            echo json_encode(array('type' => 'error', 'msg' => 'access_denied'));
+            exit();
+          }
+          if ($_SESSION['mailcow_cc_role'] == 'user') {
+            process_add_return(add_user_alias($_SESSION['mailcow_cc_username'], $attr));
+          } else {
+            // Admins/domain-admins pass target username in attr
+            if (empty($attr['username'])) {
+              http_response_code(400);
+              echo json_encode(array('type' => 'error', 'msg' => 'username_missing'));
+              exit();
+            }
+            process_add_return(add_user_alias($attr['username'], $attr));
+          }
+        break;
+        case "user-synonym":
+          if (!isset($_SESSION['mailcow_cc_role'])) {
+            http_response_code(403);
+            echo json_encode(array('type' => 'error', 'msg' => 'access_denied'));
+            exit();
+          }
+          if ($_SESSION['mailcow_cc_role'] == 'user') {
+            process_add_return(set_user_synonym($_SESSION['mailcow_cc_username'], $attr['synonym']));
+          } else {
+            if (empty($attr['username'])) {
+              http_response_code(400);
+              echo json_encode(array('type' => 'error', 'msg' => 'username_missing'));
+              exit();
+            }
+            process_add_return(set_user_synonym($attr['username'], $attr['synonym']));
+          }
+        break;
         case "relayhost":
           process_add_return(relayhost('add', $attr));
         break;
@@ -448,6 +483,31 @@ if (isset($_GET['query'])) {
       }
       if (isset($_SESSION['mailcow_cc_role'])) {
         switch ($category) {
+          case "user-alias":
+            // List user-managed aliases or retrieve user alias config.
+            // User role:  /get/user-alias           → list aliases
+            //             /get/user-alias/config     → return config
+            // Admin role: /get/user-alias/<email>           → list aliases for <email>
+            //             /get/user-alias/<email>/config     → config for <email>
+            if ($_SESSION['mailcow_cc_role'] == 'user') {
+              $target_user    = $_SESSION['mailcow_cc_username'];
+              $ua_sub_resource = $object; // "config" or null
+            } else {
+              $target_user = $object;
+              if (empty($target_user)) {
+                http_response_code(400);
+                echo json_encode(array('type' => 'error', 'msg' => 'username_missing'));
+                exit();
+              }
+              $ua_sub_resource = $extra; // "config" or null
+            }
+            if ($ua_sub_resource === 'config') {
+              process_get_return(get_user_alias_config($target_user));
+            } else {
+              process_get_return(list_user_aliases($target_user), false);
+            }
+          break;
+
           case "rspamd":
             switch ($object) {
               case "actions":
@@ -1725,6 +1785,25 @@ if (isset($_GET['query'])) {
       switch ($category) {
         case "alias":
           process_delete_return(mailbox('delete', 'alias', array('id' => $items)));
+        break;
+        case "user-alias":
+          if (!isset($_SESSION['mailcow_cc_role'])) {
+            http_response_code(403);
+            echo json_encode(array('type' => 'error', 'msg' => 'access_denied'));
+            exit();
+          }
+          if ($_SESSION['mailcow_cc_role'] == 'user') {
+            process_delete_return(delete_user_alias($_SESSION['mailcow_cc_username'], array('id' => $items)));
+          } else {
+            // Admins pass target username via query param or items wrapper
+            $target_user = isset($_GET['username']) ? $_GET['username'] : null;
+            if (empty($target_user)) {
+              http_response_code(400);
+              echo json_encode(array('type' => 'error', 'msg' => 'username_missing'));
+              exit();
+            }
+            process_delete_return(delete_user_alias($target_user, array('id' => $items)));
+          }
         break;
         case "oauth2-client":
           process_delete_return(oauth2('delete', 'client', array('id' => $items)));

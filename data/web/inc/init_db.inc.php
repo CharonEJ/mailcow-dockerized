@@ -4,7 +4,7 @@ function init_db_schema()
   try {
     global $pdo;
 
-    $db_version = "19022026_1220";
+    $db_version = "11032026_0001";
 
     $stmt = $pdo->query("SHOW TABLES LIKE 'versions'");
     $num_results = count($stmt->fetchAll(PDO::FETCH_ASSOC));
@@ -499,6 +499,7 @@ function init_db_schema()
         "cols" => array(
           "username" => "VARCHAR(255) NOT NULL",
           "spam_alias" => "TINYINT(1) NOT NULL DEFAULT '1'",
+          "user_managed_aliases" => "TINYINT(1) NOT NULL DEFAULT '1'",
           "tls_policy" => "TINYINT(1) NOT NULL DEFAULT '1'",
           "spam_score" => "TINYINT(1) NOT NULL DEFAULT '1'",
           "spam_policy" => "TINYINT(1) NOT NULL DEFAULT '1'",
@@ -521,6 +522,32 @@ function init_db_schema()
           ),
           "fkey" => array(
             "fk_username" => array(
+              "col" => "username",
+              "ref" => "mailbox.username",
+              "delete" => "CASCADE",
+              "update" => "NO ACTION"
+            )
+          )
+        ),
+        "attr" => "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC"
+      ),
+      "user_alias_config" => array(
+        "cols" => array(
+          "username" => "VARCHAR(255) NOT NULL",
+          "synonym" => "VARCHAR(20) DEFAULT NULL",
+          "domain" => "VARCHAR(255) NOT NULL",
+          "synonym_set" => "TINYINT(1) NOT NULL DEFAULT '0'",
+          "created" => "DATETIME(0) NOT NULL DEFAULT NOW(0)"
+        ),
+        "keys" => array(
+          "primary" => array(
+            "" => array("username")
+          ),
+          "unique" => array(
+            "synonym_domain_unique" => array("synonym", "domain")
+          ),
+          "fkey" => array(
+            "fk_uac_username" => array(
               "col" => "username",
               "ref" => "mailbox.username",
               "delete" => "CASCADE",
