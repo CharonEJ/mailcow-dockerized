@@ -53,6 +53,8 @@ foreach (app_passwd("get") as $app_password)
     }
 }
 
+$user_alias_config = get_user_alias_config($username);
+
 $template = 'user.twig';
 $template_data = [
   'acl' => $_SESSION['acl'],
@@ -73,6 +75,7 @@ $template_data = [
   'lang_user' => json_encode($lang['user']),
   'number_of_app_passwords' => $number_of_app_passwords,
   'lang_datatables' => json_encode($lang['datatables']),
+  'user_alias_config' => $user_alias_config,
 ];
 
 $js_minifier->add('/web/js/site/user.js');
