@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if synonym_enabled %}
+<div class="card">
+  <h2>Kurzname (Synonym)</h2>
+  {% if synonym %}
+    <p>Aktives Synonym: <code>{{ synonym }}</code>
+      &rarr; Aliase wie <code>shop-{{ synonym }}@{{ domain }}</code>
+      sind möglich.</p>
+    <p class="muted">Das Synonym wurde dauerhaft gespeichert und kann nicht
+      mehr geändert werden.</p>
+  {% else %}
+    <p class="muted">Optional können Sie einmalig einen Kurznamen festlegen
+      (z.&nbsp;B. <code>ptr</code> für <code>{{ local }}</code>). Danach
+      können Sie zusätzlich Aliase wie
+      <code>shop-ptr@{{ domain }}</code> anlegen.
+      <strong>Diese Einstellung kann nicht rückgängig gemacht
+      werden.</strong></p>
+    <form method="post" action="{{ url_for('synonym_set') }}" class="row">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="text" name="synonym" placeholder="z. B. ptr"
+             pattern="[a-z0-9]{2,20}" maxlength="20" required>
+      <span class="muted">@{{ domain }}</span>
+      <button type="submit" class="warn">Einmalig festlegen</button>
+    </form>
+    <p class="muted">2&ndash;20 Zeichen, nur Kleinbuchstaben und Ziffern.</p>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Neuen Alias anlegen</h2>
+  <p class="muted">Schema:
+    <code>präfix-{{ local }}@{{ domain }}</code>{% if synonym %} oder
+    <code>präfix-{{ synonym }}@{{ domain }}</code>{% endif %}.
+    Im Präfix sind Kleinbuchstaben, Ziffern und Bindestriche erlaubt.</p>
+  <form method="post" action="{{ url_for('alias_add') }}" class="row">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input type="text" name="prefix" placeholder="z. B. newsletter"
+           pattern="[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?" maxlength="40"
+           required>
+    <span>-</span>
+    <select name="base">
+      {% for b in bases %}
+      <option value="{{ b }}">{{ b }}</option>
+      {% endfor %}
+    </select>
+    <span class="muted">@{{ domain }}</span>
+    <button type="submit">Anlegen</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Meine Aliase ({{ aliases|length }}/{{ max_aliases }})</h2>
+  {% if not api_ok %}
+    <p class="muted">Aliase konnten nicht geladen werden.</p>
+  {% elif aliases %}
+  <table>
+    <thead>
+      <tr><th>Alias-Adresse</th><th>Angelegt</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for a in aliases %}
+      <tr>
+        <td>{{ a.address }}</td>
+        <td class="muted">{{ a.created }}</td>
+        <td style="text-align:right">
+          <form class="inline" method="post"
+                action="{{ url_for('alias_delete') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <input type="hidden" name="alias_id" value="{{ a.id }}">
+            <button type="submit" class="danger">Löschen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Noch keine Aliase vorhanden.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

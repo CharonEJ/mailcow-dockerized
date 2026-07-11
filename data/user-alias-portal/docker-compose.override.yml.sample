@@ -1,0 +1,36 @@
+# User-Alias Self-Service Portal (companion container).
+# Talks to mailcow exclusively via the official REST API — no mailcow
+# core files are modified, so mailcow updates remain untouched.
+# Configuration: see data/user-alias-portal/README.md
+# Required in mailcow.conf: ALIAS_PORTAL_API_KEY
+
+services:
+  user-alias-portal-mailcow:
+    build: ./data/user-alias-portal
+    container_name: mailcowcustomized_user-alias-portal
+    restart: always
+    depends_on:
+      - nginx-mailcow
+      - dovecot-mailcow
+    environment:
+      - MAILCOW_API_URL=${ALIAS_PORTAL_MAILCOW_API_URL:-https://nginx-mailcow}
+      - MAILCOW_API_KEY=${ALIAS_PORTAL_API_KEY:?ALIAS_PORTAL_API_KEY ist nicht in mailcow.conf gesetzt}
+      - MAILCOW_API_VERIFY_TLS=${ALIAS_PORTAL_API_VERIFY_TLS:-0}
+      - IMAP_HOST=${ALIAS_PORTAL_IMAP_HOST:-dovecot-mailcow}
+      - IMAP_PORT=${ALIAS_PORTAL_IMAP_PORT:-993}
+      - IMAP_VERIFY_TLS=${ALIAS_PORTAL_IMAP_VERIFY_TLS:-0}
+      - MAX_ALIASES_PER_USER=${ALIAS_PORTAL_MAX_ALIASES:-50}
+      - SYNONYM_ENABLED=${ALIAS_PORTAL_SYNONYM_ENABLED:-1}
+      - COOKIE_SECURE=${ALIAS_PORTAL_COOKIE_SECURE:-1}
+      - TRUST_PROXY=${ALIAS_PORTAL_TRUST_PROXY:-0}
+    ports:
+      - "${ALIAS_PORTAL_BIND:-127.0.0.1}:${ALIAS_PORTAL_PORT:-9091}:8000"
+    volumes:
+      - user-alias-portal-db:/data
+    networks:
+      mailcow-network:
+        aliases:
+          - user-alias-portal
+
+volumes:
+  user-alias-portal-db:

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width: 420px; margin: 3rem auto;">
+  <h2>Anmelden</h2>
+  <p class="muted">Melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem
+    Postfach-Passwort an.</p>
+  <form method="post" action="{{ url_for('login') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <p><input type="email" name="email" placeholder="name@domain.de"
+              autocomplete="username" required style="width:100%"></p>
+    <p><input type="password" name="password" placeholder="Passwort"
+              autocomplete="current-password" required style="width:100%"></p>
+    <p><button type="submit" style="width:100%">Anmelden</button></p>
+  </form>
+</div>
+{% endblock %}
